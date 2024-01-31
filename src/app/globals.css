@@ -31,3 +31,9 @@ body {
     text-wrap: balance;
   }
 }
+
+@layer utilities {
+  .text-black {
+    line-height: 2;
+  }
+}

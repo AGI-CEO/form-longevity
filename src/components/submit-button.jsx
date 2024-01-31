@@ -3,15 +3,33 @@
  * @see https://v0.dev/t/fwPaOIJJewt
  */
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
-export function SubmitButton({ progress }) {
-  if (progress < 100) {
+export function SubmitButton({ progress, onClick }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleClick = () => {
+    setLoading(true);
+    onClick();
+  };
+
+  if (progress < 95) {
     return null;
   }
 
   return (
-    <Button className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-pink-500 hover:to-orange-500 transform transition-all duration-500 ease-in-out hover:scale-110 text-white font-bold py-2 px-4 rounded">
-      Submit
+    <Button
+      onClick={handleClick}
+      disabled={loading}
+      className={`m-auto mt-5 flex flex-col item-center bg-gradient-to-r pt-5 from-purple-600 to-blue-500 hover:from-pink-500 hover:to-orange-500 transform transition-all duration-500 ease-in-out hover:scale-110 text-white font-bold py-2 px-4 rounded ${
+        loading ? "opacity-50 cursor-not-allowed" : ""
+      }`}
+    >
+      {loading ? (
+        <span className="loading loading-infinity loading-lg"></span>
+      ) : (
+        "Submit"
+      )}
     </Button>
   );
 }

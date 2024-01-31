@@ -17,45 +17,67 @@ import {
 } from "@/components/ui/carousel";
 import { useState, useEffect } from "react";
 import { SubmitButton } from "@/components/submit-button";
+import ResponseComponent from "@/components/response-component";
 
 export function Form() {
   const totalQuestions = 24; // total number of questions in the form
   const [progress, setProgress] = useState(0);
   const [answeredQuestions, setAnsweredQuestions] = useState(new Set());
   const [formData, setFormData] = useState({}); // new state variable for form data
+  const [responseData, setResponseData] = useState(null);
 
   const handleInputChange = (e) => {
-    if (e.target.value !== "") {
-      setAnsweredQuestions((prevQuestions) => {
-        const newQuestions = new Set(prevQuestions);
+    setAnsweredQuestions((prevQuestions) => {
+      const newQuestions = new Set(prevQuestions);
+      if (e.target.value.trim()) {
         newQuestions.add(e.target.id);
-        return newQuestions;
-      });
+      } else {
+        newQuestions.delete(e.target.id);
+      }
+      return newQuestions;
+    });
 
-      setFormData((prevData) => {
-        // update form data
-        return { ...prevData, [e.target.id]: e.target.value };
-      });
-    }
+    setFormData((prevData) => {
+      // update form data
+      return { ...prevData, [e.target.id]: e.target.value };
+    });
   };
 
   const handleSubmit = async () => {
-    // new function for handling form submission
-    const response = await fetch("/api/intake", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(formData),
-    });
-
-    if (!response.ok) {
-      console.error("Failed to submit form", response);
+    const reqPrompt = `Based on this intake form: ${JSON.stringify(
+      formData
+    )}, provide a recommendation for the optimal longevity protocol to follow for the user. Format in markdown.`;
+    const data = {
+      question: reqPrompt,
+    };
+    //console.log(data);
+    try {
+      const response = await fetch(
+        "https://flowise.seelanglabs.com/api/v1/prediction/baddc5c7-9bdf-4cde-8ccd-6fb4e3022163",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        }
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      console.log(response);
+      const responseData = await response.json();
+      setResponseData(responseData);
+    } catch (error) {
+      console.error("Failed to fetch:", error);
     }
   };
 
   useEffect(() => {
-    setProgress((answeredQuestions.size / totalQuestions) * 100);
+    const newProgress = Math.round(
+      (answeredQuestions.size / totalQuestions) * 100
+    );
+    setProgress(newProgress);
   }, [answeredQuestions]);
 
   return (
@@ -64,7 +86,7 @@ export function Form() {
         <div className="relative bg-gray-200 h-2 rounded-full mb-4">
           <div
             className="absolute bg-green-500 h-full rounded-full"
-            style={{ width: `${Math.min(progress, 100)}%` }}
+            style={{ width: `${Math.min(progress, 105)}%` }}
           />
           <div className="absolute top-0 left-0 flex justify-between w-full px-2 text-xs">
             <div
@@ -83,7 +105,7 @@ export function Form() {
               66%
             </div>
             <div
-              className={progress >= 100 ? "text-green-500" : "text-gray-500"}
+              className={progress >= 95 ? "text-green-500" : "text-gray-500"}
             >
               100%
             </div>
@@ -377,13 +399,15 @@ export function Form() {
                   </form>
                 </CardContent>
               </Card>
+              <SubmitButton progress={progress} onClick={handleSubmit} />
             </CarouselItem>
           </CarouselContent>
           <CarouselPrevious />
+
           <CarouselNext />
         </Carousel>
       </div>
-      <SubmitButton progress={progress} onClick={handleSubmit} />
+      {responseData && <ResponseComponent data={responseData} />}
     </div>
   );
 }
